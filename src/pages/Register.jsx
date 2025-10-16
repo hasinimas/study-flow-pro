@@ -1,31 +1,17 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  auth,
-  signInWithEmailAndPassword,
-  googleProvider,
-  signInWithPopup,
-} from "../firebase/config";
+import { createUserWithEmailAndPassword, auth } from "../firebase/config";
+import { Link, useNavigate } from "react-router-dom";
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, pwd);
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const handleGoogle = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
+      await createUserWithEmailAndPassword(auth, email, pwd);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -35,9 +21,9 @@ export default function Login() {
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-br from-violet-600 to-cyan-500">
       <div className="bg-white/10 p-8 rounded-2xl shadow-lg w-96 text-white">
-        <h2 className="text-2xl font-bold mb-6 text-center">🔐 Login</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">📝 Register</h2>
         {error && <p className="text-red-300 mb-3 text-sm">{error}</p>}
-        <form onSubmit={handleLogin} className="flex flex-col gap-3">
+        <form onSubmit={handleRegister} className="flex flex-col gap-3">
           <input
             type="email"
             placeholder="Email"
@@ -53,19 +39,13 @@ export default function Login() {
             onChange={(e) => setPwd(e.target.value)}
           />
           <button className="bg-gradient-to-r from-yellow-400 to-yellow-500 py-2 rounded font-semibold text-black">
-            Login
+            Register
           </button>
         </form>
-        <button
-          onClick={handleGoogle}
-          className="mt-3 w-full bg-white text-black py-2 rounded font-semibold"
-        >
-          Sign in with Google
-        </button>
         <p className="text-sm mt-4 text-center">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-yellow-300 underline">
-            Register
+          Already have an account?{" "}
+          <Link to="/" className="text-yellow-300 underline">
+            Login
           </Link>
         </p>
       </div>

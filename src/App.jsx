@@ -1,32 +1,55 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
+import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
 import Login from "./pages/Login";
-import Profile from "./pages/Profile";
-import "./index.css";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import TaskList from "./components/TaskList";
+import ProtectedRoute from "./pages/ProtectedRoute";
+import { signOut, auth } from "./firebase/config";
+
+function Navbar() {
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    await signOut(auth);
+    navigate("/");
+  };
+  return (
+    <nav className="flex justify-between p-4 bg-white/10 text-white">
+      <div className="font-bold text-lg">🎓 StudyFlow Pro</div>
+      <div className="flex gap-4">
+        <Link to="/dashboard" className="hover:text-yellow-300">Dashboard</Link>
+        <Link to="/tasks" className="hover:text-yellow-300">Tasks</Link>
+        <button onClick={handleLogout} className="hover:text-red-300">Logout</button>
+      </div>
+    </nav>
+  );
+}
 
 export default function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-800 to-sky-700 text-white">
-        <nav className="flex justify-between items-center px-6 py-4 bg-white/10 backdrop-blur-md">
-          <h1 className="text-2xl font-bold text-yellow-300">StudyFlowPro</h1>
-          <div className="flex gap-4">
-            <Link to="/">Dashboard</Link>
-            <Link to="/tasks">Tasks</Link>
-            <Link to="/login">Login</Link>
-            <Link to="/profile">Profile</Link>
-          </div>
-        </nav>
-
-        <main className="p-6">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Navbar />
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <Navbar />
+              <TaskList />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
