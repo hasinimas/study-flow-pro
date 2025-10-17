@@ -1,116 +1,124 @@
-import React, { useEffect, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { motion } from "framer-motion";
+// src/pages/Dashboard.jsx
+import React, { useEffect, useState, useMemo } from "react";
 import { realtimeDB, ref, onValue, set } from "../firebase/config";
 import { auth } from "../firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
+import StudyChart from "../components/StudyChart";
+import SubjectPie from "../components/SubjectPie";
+import TaskList from "../components/TaskList";
 
-const defaultWeek = [
-  { day: "Mon", hrs: 0 },
-  { day: "Tue", hrs: 0 },
-  { day: "Wed", hrs: 0 },
-  { day: "Thu", hrs: 0 },
-  { day: "Fri", hrs: 0 },
-  { day: "Sat", hrs: 0 },
-  { day: "Sun", hrs: 0 },
-];
+/*
+Session structure stored under /sessions/{uid}/{pushId}:
+{
+  subject: string,
+  hours: number,
+  timestamp: ISO,
+  date: "YYYY-MM-DD",
+  day: "Mon"
+}
+*/
+
+function computeTip(avg) {
+  if (avg >= 4) return "Amazing — keep challenging yourself! Try advanced problems.";
+  if (avg >= 2.5) return "Good streak! Add variety: rotate subjects for balanced learning.";
+  return "Low focus time. Start with 25-minute Pomodoros and tiny wins.";
+}
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
-  const [data, setData] = useState(defaultWeek);
-  const [tip, setTip] = useState("");
-  const [status, setStatus] = useState("");
+  const [sessionsObj, setSessionsObj] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
-    return unsub;
+    return () => unsub();
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    const refPath = ref(realtimeDB, `studyData/${user.uid}`);
-    onValue(refPath, (snapshot) => {
-      const val = snapshot.val();
-      if (val) setData(val);
-    });
+    if (!user) { setSessionsObj({}); setLoading(false); return; }
+    const sessionsRef = ref(realtimeDB, `sessions/${user.uid}`);
+    const off = onValue(sessionsRef, (snap) => {
+      setSessionsObj(snap.val() || {});
+      setLoading(false);
+    }, (err) => { console.error(err); setLoading(false); });
+    return () => off && off();
   }, [user]);
 
-  const handleAddHours = async (day, hrs) => {
-    if (!user) return;
-    const updated = data.map((d) => (d.day === day ? { ...d, hrs: +hrs } : d));
-    setData(updated);
-    const refPath = ref(realtimeDB, `studyData/${user.uid}`);
-    await set(refPath, updated);
-    setStatus("✅ Saved!");
-    setTimeout(() => setStatus(""), 1200);
-  };
+  const sessionsArray = useMemo(() => Object.entries(sessionsObj).map(([id, s]) => ({ id, ...s })).sort((a,b)=> (b.timestamp||"").localeCompare(a.timestamp||"")), [sessionsObj]);
 
-  const avg = data.reduce((s, i) => s + i.hrs, 0) / 7;
-  useEffect(() => {
-    if (avg >= 4) setTip("Amazing consistency! Increase your challenge!");
-    else if (avg >= 2.5) setTip("Good progress! Try mixing subjects.");
-    else setTip("Low focus time. Try 25-minute Pomodoros!");
-  }, [data]);
+  // weekly aggregation for last 7 days
+  const last7 = useMemo(() => {
+    const map = {};
+    const arr = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0,10);
+      const label = d.toLocaleDateString("en-US", { weekday: "short" });
+      map[iso] = { date: iso, day: label, hrs: 0 };
+      arr.push(map[iso]);
+    }
+    sessionsArray.forEach(s => {
+      if (s.date && map[s.date]) map[s.date].hrs += Number(s.hours || 0);
+    });
+    return arr;
+  }, [sessionsArray]);
+
+  // subject distribution
+  const subjectDist = useMemo(() => {
+    const m = {};
+    sessionsArray.forEach(s => {
+      const sub = s.subject || "Other";
+      m[sub] = (m[sub] || 0) + Number(s.hours || 0);
+    });
+    return Object.entries(m).map(([name, value]) => ({ name, value }));
+  }, [sessionsArray]);
+
+  // avg hours per day (week)
+  const avg = useMemo(() => {
+    return last7.reduce((s,i)=>s+Number(i.hrs||0),0)/7;
+  }, [last7]);
+
+  const aiTip = computeTip(avg);
 
   return (
-    <section className="mt-8 text-white">
+    <div className="container mx-auto">
       <div className="grid md:grid-cols-3 gap-6">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="md:col-span-2 bg-white/10 p-6 rounded-xl shadow"
-        >
-          <h3 className="text-lg font-bold mb-4">📊 Weekly Study Hours</h3>
-          <div style={{ width: "100%", height: 260 }}>
-            <ResponsiveContainer>
-              <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="hrs"
-                  stroke="url(#gradLine)"
-                  strokeWidth={3}
-                  dot={{ r: 4 }}
-                />
-                <defs>
-                  <linearGradient id="gradLine" x1="0" x2="1" y1="0" y2="0">
-                    <stop offset="0%" stopColor="#7c3aed" />
-                    <stop offset="100%" stopColor="#06b6d4" />
-                  </linearGradient>
-                </defs>
-              </LineChart>
-            </ResponsiveContainer>
+        <div className="md:col-span-2 card">
+          <h2 className="text-xl font-bold mb-3">Weekly Overview</h2>
+          {loading ? <div>Loading…</div> : <StudyChart data={last7} />}
+          <div className="mt-4">
+            <h3 className="font-semibold mb-2">Recent entries</h3>
+            {sessionsArray.length === 0 ? <div>No sessions logged yet</div> : (
+              <ul className="space-y-2">
+                {sessionsArray.slice(0,10).map(s => (
+                  <li key={s.id} className="p-2 rounded bg-white/5 flex justify-between">
+                    <div>
+                      <div className="font-semibold">{s.subject}</div>
+                      <div className="text-sm">{s.date} • {s.day}</div>
+                    </div>
+                    <div className="font-bold">{s.hours} h</div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+        </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {data.map((d) => (
-              <div key={d.day} className="flex items-center gap-2">
-                <label className="w-10">{d.day}</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={d.hrs}
-                  onChange={(e) => handleAddHours(d.day, e.target.value)}
-                  className="w-20 p-1 rounded text-black"
-                />
-              </div>
-            ))}
+        <div className="card">
+          <h3 className="text-lg font-semibold mb-3">Subject Breakdown</h3>
+          <SubjectPie data={subjectDist} />
+          <div className="mt-4">
+            <h4 className="font-semibold">AI Study Tip</h4>
+            <p className="text-sm mt-2">{aiTip}</p>
+            <p className="text-xs mt-2 text-slate-200">Average: {avg.toFixed(2)} hrs/day</p>
           </div>
-          <div className="mt-2 text-sm text-green-300">{status}</div>
-        </motion.div>
-
-        <motion.aside
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-white/10 p-6 rounded-xl shadow"
-        >
-          <h4 className="font-semibold mb-2">💡 AI Study Tip</h4>
-          <p className="text-sm mb-4">{tip}</p>
-        </motion.aside>
+        </div>
       </div>
-    </section>
+
+      <div className="mt-6">
+        <TaskList />
+      </div>
+    </div>
   );
 }

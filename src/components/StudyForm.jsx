@@ -1,52 +1,49 @@
 // src/components/StudyForm.jsx
-import React, { useState } from "react";
-import { realtimeDB, ref, push } from "../firebase/config"; // adjust path if needed
+import React, { useState, useEffect } from "react";
+import { auth, realtimeDB, ref, push } from "../firebase/config";
+import { onAuthStateChanged } from "firebase/auth";
 
-export default function StudyForm({ user }) {
+export default function StudyForm() {
+  const [user, setUser] = useState(null);
   const [subject, setSubject] = useState("");
   const [hours, setHours] = useState("");
 
-  if (!user) {
-    return <div className="text-center">Please sign in to log study hours.</div>;
-  }
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsub();
+  }, []);
 
-  const handleSubmit = async (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    const hrs = Number(hours);
-    if (!subject.trim() || !hrs || hrs <= 0) return alert("Enter subject and hours > 0");
-
+    if (!user) return alert("Please sign in.");
+    if (!subject.trim() || !hours || Number(hours) <= 0) return alert("Enter subject and hours > 0.");
     const now = new Date();
-    const dateISO = now.toISOString().slice(0, 10); // YYYY-MM-DD
-    const day = now.toLocaleDateString("en-US", { weekday: "short" }); // Mon, Tue...
     const payload = {
       subject: subject.trim(),
-      hours: hrs,
+      hours: Number(hours),
       timestamp: now.toISOString(),
-      date: dateISO,
-      day,
+      date: now.toISOString().slice(0,10),
+      day: now.toLocaleDateString("en-US", { weekday: "short" })
     };
-
+    const sessionsRef = ref(realtimeDB, `sessions/${user.uid}`);
     try {
-      // write to /sessions/{uid}/{pushId}
-      const sessionsRef = ref(realtimeDB, `sessions/${user.uid}`);
       await push(sessionsRef, payload);
       setSubject("");
       setHours("");
     } catch (err) {
-      console.error("Failed to save session:", err);
-      alert("Error saving. See console.");
+      console.error(err);
+      alert("Failed to save session.");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <h3 className="text-lg font-semibold text-white">Log Study Hours</h3>
-      <input className="p-2 rounded text-black" placeholder="Subject (e.g. Math)" value={subject} onChange={(e)=>setSubject(e.target.value)} />
-      <input type="number" step="0.5" className="p-2 rounded text-black" placeholder="Hours (e.g. 1.5)" value={hours} onChange={(e)=>setHours(e.target.value)} />
-      <div className="flex gap-2">
-        <button className="px-4 py-2 rounded bg-yellow-400 text-black">Add</button>
-        <button type="button" onClick={() => { setSubject(""); setHours(""); }} className="px-4 py-2 rounded border">Clear</button>
-      </div>
-    </form>
+    <div className="card mb-4">
+      <h3 className="text-lg font-semibold mb-3">Log Study Hours</h3>
+      <form onSubmit={handleAdd} className="flex gap-2 flex-wrap">
+        <input placeholder="Subject (e.g. Math)" className="p-2 rounded text-black flex-1 min-w-[180px]" value={subject} onChange={(e)=>setSubject(e.target.value)} />
+        <input type="number" step="0.5" placeholder="Hours" className="p-2 rounded text-black w-28" value={hours} onChange={(e)=>setHours(e.target.value)} />
+        <button className="btn-primary">Add Session</button>
+      </form>
+    </div>
   );
 }

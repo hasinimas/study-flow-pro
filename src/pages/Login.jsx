@@ -1,11 +1,7 @@
+// src/pages/Login.jsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import {
-  auth,
-  signInWithEmailAndPassword,
-  googleProvider,
-  signInWithPopup,
-} from "../firebase/config";
+import { auth, signInWithEmailAndPassword, provider, signInWithPopup } from "../firebase/config";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,7 +9,7 @@ export default function Login() {
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, pwd);
@@ -25,7 +21,7 @@ export default function Login() {
 
   const handleGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithPopup(auth, provider);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -33,41 +29,19 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-violet-600 to-cyan-500">
-      <div className="bg-white/10 p-8 rounded-2xl shadow-lg w-96 text-white">
-        <h2 className="text-2xl font-bold mb-6 text-center">🔐 Login</h2>
-        {error && <p className="text-red-300 mb-3 text-sm">{error}</p>}
-        <form onSubmit={handleLogin} className="flex flex-col gap-3">
-          <input
-            type="email"
-            placeholder="Email"
-            className="p-2 rounded text-black"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            className="p-2 rounded text-black"
-            value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
-          />
-          <button className="bg-gradient-to-r from-yellow-400 to-yellow-500 py-2 rounded font-semibold text-black">
-            Login
-          </button>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="card w-96">
+        <h2 className="text-2xl font-bold mb-4">Sign in</h2>
+        {error && <div className="text-red-300 mb-2">{error}</div>}
+        <form onSubmit={handleEmailLogin} className="flex flex-col gap-3">
+          <input className="p-2 rounded text-black" type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
+          <input className="p-2 rounded text-black" type="password" placeholder="Password" value={pwd} onChange={(e)=>setPwd(e.target.value)} required />
+          <button className="btn-primary">Login</button>
         </form>
-        <button
-          onClick={handleGoogle}
-          className="mt-3 w-full bg-white text-black py-2 rounded font-semibold"
-        >
-          Sign in with Google
-        </button>
-        <p className="text-sm mt-4 text-center">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-yellow-300 underline">
-            Register
-          </Link>
-        </p>
+
+        <button onClick={handleGoogle} className="mt-3 w-full bg-white text-black py-2 rounded font-semibold">Sign in with Google</button>
+
+        <p className="mt-4 text-sm">Don't have an account? <Link to="/register" className="text-yellow-300">Register</Link></p>
       </div>
     </div>
   );

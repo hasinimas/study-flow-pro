@@ -1,6 +1,7 @@
+// src/pages/Register.jsx
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword, auth } from "../firebase/config";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -19,35 +20,16 @@ export default function Register() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-violet-600 to-cyan-500">
-      <div className="bg-white/10 p-8 rounded-2xl shadow-lg w-96 text-white">
-        <h2 className="text-2xl font-bold mb-6 text-center">📝 Register</h2>
-        {error && <p className="text-red-300 mb-3 text-sm">{error}</p>}
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="card w-96">
+        <h2 className="text-2xl font-bold mb-4">Register</h2>
+        {error && <div className="text-red-300 mb-2">{error}</div>}
         <form onSubmit={handleRegister} className="flex flex-col gap-3">
-          <input
-            type="email"
-            placeholder="Email"
-            className="p-2 rounded text-black"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            className="p-2 rounded text-black"
-            value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
-          />
-          <button className="bg-gradient-to-r from-yellow-400 to-yellow-500 py-2 rounded font-semibold text-black">
-            Register
-          </button>
+          <input className="p-2 rounded text-black" type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
+          <input className="p-2 rounded text-black" type="password" placeholder="Password" value={pwd} onChange={(e)=>setPwd(e.target.value)} required />
+          <button className="btn-primary">Register</button>
         </form>
-        <p className="text-sm mt-4 text-center">
-          Already have an account?{" "}
-          <Link to="/" className="text-yellow-300 underline">
-            Login
-          </Link>
-        </p>
+        <p className="mt-4 text-sm">Already have an account? <Link to="/" className="text-yellow-300">Login</Link></p>
       </div>
     </div>
   );
