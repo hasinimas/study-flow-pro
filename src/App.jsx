@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import TasksPage from "./pages/Tasks";
 import Profile from "./pages/Profile";
+import Analysis from "./pages/Analysis";  
 import ProtectedRoute from "./pages/ProtectedRoute";
 import { auth, signOut } from "./firebase/config";
 
@@ -22,8 +23,11 @@ function TopNav() {
       <div className="flex items-center gap-4">
         <Link to="/dashboard" className="hover:opacity-90">Dashboard</Link>
         <Link to="/tasks" className="hover:opacity-90">Tasks</Link>
+        <Link to="/analysis" className="hover:opacity-90">Analysis</Link> 
         <Link to="/profile" className="hover:opacity-90">Profile</Link>
-        <button onClick={handleSignOut} className="px-3 py-1 rounded bg-red-500 text-white">Logout</button>
+        <button onClick={handleSignOut} className="px-3 py-1 rounded bg-red-500 text-white">
+          Logout
+        </button>
       </div>
     </nav>
   );
@@ -33,10 +37,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* default -> login */}
+        {/* Default -> Login */}
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
+        {/* Protected Routes */}
         <Route
           path="/dashboard"
           element={
@@ -52,6 +57,15 @@ export default function App() {
             <ProtectedRoute>
               <TopNav />
               <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analysis"
+          element={
+            <ProtectedRoute>
+              <TopNav />
+              <Analysis /> 
             </ProtectedRoute>
           }
         />
