@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { ref, set, onValue } from "firebase/database";
-import { realtimeDB, auth } from "../firebase/config";
+import React from "react";
 
 const AvatarSelector = ({ currentAvatar, onSelect }) => {
   const avatars = [
@@ -17,15 +15,26 @@ const AvatarSelector = ({ currentAvatar, onSelect }) => {
   return (
     <div className="grid grid-cols-4 gap-4 mt-4">
       {avatars.map((url, index) => (
-        <img
+        <div
           key={index}
-          src={url}
-          alt={`Avatar ${index + 1}`}
-          className={`w-16 h-16 rounded-full cursor-pointer border-4 transition-all duration-200 ${
-            currentAvatar === url ? "border-purple-500 scale-110" : "border-transparent hover:border-purple-300"
+          className={`relative group rounded-full transition-all duration-300 hover:scale-110 ${
+            currentAvatar === url ? "scale-110" : ""
           }`}
-          onClick={() => onSelect(url)}
-        />
+        >
+          <img
+            src={url}
+            alt={`Avatar ${index + 1}`}
+            className={`w-16 h-16 rounded-full border-4 transition-all duration-300 shadow-md ${
+              currentAvatar === url
+                ? "border-transparent ring-2 ring-offset-2 ring-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-300 p-[3px]"
+                : "border-transparent hover:border-purple-300"
+            }`}
+            onClick={() => onSelect(url)}
+          />
+          {currentAvatar === url && (
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-300 opacity-30 blur-md animate-pulse"></div>
+          )}
+        </div>
       ))}
     </div>
   );

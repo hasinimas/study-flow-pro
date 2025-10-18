@@ -16,3 +16,13 @@ body {
 .btn-primary {
   @apply inline-flex items-center justify-center bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-semibold px-4 py-2 rounded-lg;
 }
+
+@keyframes glow-rotate {
+  0% { filter: drop-shadow(0 0 10px #a855f7); }
+  33% { filter: drop-shadow(0 0 12px #3b82f6); }
+  66% { filter: drop-shadow(0 0 12px #ec4899); }
+  100% { filter: drop-shadow(0 0 10px #a855f7); }
+}
+.animate-glow {
+  animation: glow-rotate 4s linear infinite;
+}
